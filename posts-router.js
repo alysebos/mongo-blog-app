@@ -72,7 +72,7 @@ postsRouter.post("/", (req, res) => {
 
 });
 
-// PUT to /posts/:id shoul d update
+// PUT to /posts/:id should update
 postsRouter.put("/:id", (req, res) => {
 	// id in req path and body match
 	if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {
@@ -95,7 +95,10 @@ postsRouter.put("/:id", (req, res) => {
 	BlogPost
 		.findByIdAndUpdate(req.params.id, { $set: toUpdate }, {new: true})
 		.then(post => res.status(200).json(post.serialize()))
-		.catch(err => res.status(500).json({ message: "Internal server error" }));
+		.catch(err => {
+			console.error(err);
+			res.status(500).json({ message: "Internal server error" })
+		});
 });
 
 // DELETE to /posts/:id should delete

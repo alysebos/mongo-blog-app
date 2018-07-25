@@ -2,28 +2,74 @@
 
 const mongoose = require("mongoose");
 
-// schema representing a blog post
-const postSchema = mongoose.Schema({
-	title: {type: String, required: true},
-	content: {type: String, required: true},
-	author: {
-		firstName: {type: String, required: true},
-		lastName: {type: String, required: true}
-	},
-	created: {type: Date, required: true}
+// schema for the comments
+const commentSchema = mongoose.Schema({
+	content: 'string'
 });
 
-// serialize the post to show the data correctly
+// schema for author
+const authorSchema = mongoose.Schema({
+	firstName: 'string',
+	lastName: 'string',
+	userName: { type: 'string', unique: true }
+})
+
+// schema representing a blog post
+const postSchema = mongoose.Schema({
+	title: 'string',
+	content: 'string',
+	created: { type: 'string', default: Date.now() },
+	author: {type: mongoose.Schema.Types.ObjectId, ref: 'Author'},
+	comments: [commentSchema]
+});
+
+// add virtual for author
+postSchema.virtual('authorName').get(function() {
+	return `${this.author.firstName} ${this.author.lastName}`.trim();
+});
+
+// use Mongoos middleware before findOne to populate the author
+postSchema.pre('find', function(next) {
+	this.populate('author');
+	next();
+});
+
+postSchema.pre('findOne', function(next) {
+	this.populate('author');
+	next();
+});
+
+// serialize the post to show the data correctly / No comments
 postSchema.methods.serialize = function() {
 	return {
-		id: this._id,
 		title: this.title,
 		content: this.content,
-		author: `${this.author.firstName} ${this.author.lastName}`,
+		author: `${this.authorName}`,
 		created: this.created
 	};
 };
 
-const Blog = mongoose.model("Posts", postSchema);
+// serialize the post to show the comments, too
+postSchema.methods.serializeComments = function() {
+	return {
+		title: this.title,
+		content: this.content,
+		author: `${this.authorName}`,
+		created: this.created,
+		comments: this.comments
+	};
+};
 
-module.exports = { Blog };
+// serialize the post schema for authors
+authorSchema.methods.serialize = function() {
+	return {
+		_id: this._id,
+		name: `${this.firstName} ${this.lastName}`,
+		userName: this.userName
+	};
+};
+
+const Author = mongoose.model('Author', authorSchema);
+const BlogPost = mongoose.model("BlogPost", postSchema);
+
+module.exports = { Author, BlogPost };

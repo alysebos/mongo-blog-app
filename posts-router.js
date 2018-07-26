@@ -1,5 +1,6 @@
 const express = require('express');
 const postsRouter = express.Router();
+const mongoose = require('mongoose');
 
 const { Author, BlogPost } = require('./models');
 
@@ -45,14 +46,20 @@ postsRouter.post("/", (req, res) => {
 		.findById(req.body.author_id)
 		.then(author => {
 			if (author) {
-				BlogPost
+				return BlogPost
 					.create({
 						title: req.body.title,
 						content: req.body.content,
 						author: req.body.author_id,
 						created: Date.now()
 					})
-					.then(post => res.status(201).json(post.serializeComments()))
+					.then(post => res.status(201).json({
+						title: post.title,
+						content: post.content,
+						author: `${author.firstName} ${author.lastName}`.trim(),
+						created: post.created,
+						comments: post.comments
+					}))
 					.catch(err => {
 						console.log(err);
 						res.status(500).json({ message: "Internal server error" });
@@ -93,12 +100,17 @@ postsRouter.put("/:id", (req, res) => {
 	});
 
 	BlogPost
-		.findByIdAndUpdate(req.params.id, { $set: toUpdate }, {new: true})
-		.then(post => res.status(200).json(post.serialize()))
+		.findByIdAndUpdate(req.params.id, { $set: toUpdate }, { new: true })
+		.then(post => res.status(200).json({
+			id: post.id,
+			title: post.title,
+			content: post.content 
+		}))
 		.catch(err => {
 			console.error(err);
-			res.status(500).json({ message: "Internal server error" })
+			res.status(500).json({ message: "Internal server error" });
 		});
+
 });
 
 // DELETE to /posts/:id should delete
